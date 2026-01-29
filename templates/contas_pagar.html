@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contas a Pagar - Manuela Metais</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">
+                <h1>🔄 MANUELA METAIS</h1>
+                <p>Sistema de Gestão de Coleta de Metais Recicláveis</p>
+            </div>
+        </div>
+    </div>
+
+    <nav class="nav">
+        <div class="nav-content">
+            <a href="/">Dashboard</a>
+            <a href="/clientes">Clientes</a>
+            <a href="/fornecedores">Fornecedores</a>
+            <a href="/funcionarios">Funcionários</a>
+            <a href="/produtos">Produtos</a>
+            <a href="/estoque">Estoque</a>
+            <a href="/contas-receber">Contas a Receber</a>
+            <a href="/contas-pagar" class="active">Contas a Pagar</a>
+            <a href="/gastos">Gastos</a>
+            <a href="/pedidos-compra">Pedidos de Compra</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h2>Contas a Pagar</h2>
+                <button class="btn btn-primary" onclick="openModal()">+ Nova Conta</button>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Vencimento</th>
+                            <th>Fornecedor</th>
+                            <th>Descrição</th>
+                            <th>Valor</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Nova Conta a Pagar</h3>
+                <button class="close-modal" onclick="closeModal()">&times;</button>
+            </div>
+            <form id="form">
+                <div class="form-group">
+                    <label>Fornecedor</label>
+                    <select class="form-control" name="fornecedor_id" id="fornecedor-select">
+                        <option value="">Selecione</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Valor (R$) *</label>
+                        <input type="number" class="form-control" name="valor" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Vencimento *</label>
+                        <input type="date" class="form-control" name="data_vencimento" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Descrição</label>
+                    <textarea class="form-control" name="descricao" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Salvar</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let contas = [];
+        let fornecedores = [];
+
+        async function load() {
+            const [cRes, fRes] = await Promise.all([
+                fetch('/api/contas-pagar'),
+                fetch('/api/fornecedores')
+            ]);
+            contas = await cRes.json();
+            fornecedores = await fRes.json();
+            
+            const select = document.getElementById('fornecedor-select');
+            select.innerHTML = '<option value="">Selecione</option>';
+            fornecedores.forEach(f => {
+                const opt = document.createElement('option');
+                opt.value = f.id;
+                opt.textContent = f.nome;
+                select.appendChild(opt);
+            });
+            
+            render();
+        }
+
+        function render() {
+            const tbody = document.getElementById('tbody');
+            tbody.innerHTML = '';
+
+            if (contas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px;">Nenhuma conta cadastrada</td></tr>';
+                return;
+            }
+
+            contas.forEach(conta => {
+                const fornecedor = fornecedores.find(f => f.id == conta.fornecedor_id);
+                const statusClass = conta.status === 'pendente' ? 'badge-warning' : 'badge-success';
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${conta.data_vencimento}</td>
+                    <td>${fornecedor ? fornecedor.nome : '-'}</td>
+                    <td>${conta.descricao || '-'}</td>
+                    <td>R$ ${parseFloat(conta.valor).toFixed(2).replace('.', ',')}</td>
+                    <td><span class="badge ${statusClass}">${conta.status}</span></td>
+                    <td>
+                        ${conta.status === 'pendente' ? 
+                            `<button class="btn btn-success btn-sm" onclick="pagar(${conta.id})">Pagar</button>` : 
+                            '-'}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openModal() {
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+            document.getElementById('form').reset();
+        }
+
+        document.getElementById('form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const obj = {
+                fornecedor_id: formData.get('fornecedor_id'),
+                valor: formData.get('valor'),
+                data_vencimento: formData.get('data_vencimento'),
+                descricao: formData.get('descricao')
+            };
+
+            await fetch('/api/contas-pagar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(obj)
+            });
+
+            closeModal();
+            load();
+        });
+
+        async function pagar(id) {
+            if (!confirm('Confirmar pagamento?')) return;
+            await fetch(`/api/contas-pagar/${id}/pagar`, { method: 'POST' });
+            load();
+        }
+
+        document.getElementById('modal').addEventListener('click', (e) => {
+            if (e.target.id === 'modal') closeModal();
+        });
+
+        load();
+    </script>
+</body>
+</html>

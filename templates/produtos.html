@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Produtos - Manuela Metais</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">
+                <h1>🔄 MANUELA METAIS</h1>
+                <p>Sistema de Gestão de Coleta de Metais Recicláveis</p>
+            </div>
+        </div>
+    </div>
+
+    <nav class="nav">
+        <div class="nav-content">
+            <a href="/">Dashboard</a>
+            <a href="/clientes">Clientes</a>
+            <a href="/fornecedores">Fornecedores</a>
+            <a href="/funcionarios">Funcionários</a>
+            <a href="/produtos" class="active">Produtos</a>
+            <a href="/estoque">Estoque</a>
+            <a href="/contas-receber">Contas a Receber</a>
+            <a href="/contas-pagar">Contas a Pagar</a>
+            <a href="/gastos">Gastos</a>
+            <a href="/pedidos-compra">Pedidos de Compra</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h2>Cadastro de Produtos (Tipos de Metais)</h2>
+                <button class="btn btn-primary" onclick="openModal()">+ Novo Produto</button>
+            </div>
+
+            <div class="table-container">
+                <table id="produtos-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nome</th>
+                            <th>Unidade</th>
+                            <th>Preço Compra (R$)</th>
+                            <th>Preço Venda (R$)</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Novo Produto</h3>
+                <button class="close-modal" onclick="closeModal()">&times;</button>
+            </div>
+            <form id="produto-form">
+                <div class="form-group">
+                    <label>Nome do Produto *</label>
+                    <input type="text" class="form-control" name="nome" placeholder="Ex: Cobre, Alumínio, Ferro" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Unidade *</label>
+                        <select class="form-control" name="unidade" required>
+                            <option value="kg">Quilograma (kg)</option>
+                            <option value="ton">Tonelada (ton)</option>
+                            <option value="un">Unidade (un)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Preço de Compra (R$)</label>
+                        <input type="number" class="form-control" name="preco_compra" step="0.01">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Preço de Venda (R$)</label>
+                    <input type="number" class="form-control" name="preco_venda" step="0.01">
+                </div>
+                <button type="submit" class="btn btn-primary">Salvar Produto</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let produtos = [];
+
+        async function loadProdutos() {
+            const response = await fetch('/api/produtos');
+            produtos = await response.json();
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.querySelector('#produtos-table tbody');
+            tbody.innerHTML = '';
+
+            if (produtos.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px;">Nenhum produto cadastrado</td></tr>';
+                return;
+            }
+
+            produtos.forEach(produto => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${produto.id}</td>
+                    <td><strong>${produto.nome}</strong></td>
+                    <td>${produto.unidade}</td>
+                    <td>R$ ${parseFloat(produto.preco_compra || 0).toFixed(2).replace('.', ',')}</td>
+                    <td>R$ ${parseFloat(produto.preco_venda || 0).toFixed(2).replace('.', ',')}</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm" onclick="deleteProduto(${produto.id})">Excluir</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openModal() {
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+            document.getElementById('produto-form').reset();
+        }
+
+        document.getElementById('produto-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const produto = {
+                nome: formData.get('nome'),
+                unidade: formData.get('unidade'),
+                preco_compra: formData.get('preco_compra'),
+                preco_venda: formData.get('preco_venda')
+            };
+
+            await fetch('/api/produtos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(produto)
+            });
+
+            closeModal();
+            loadProdutos();
+        });
+
+        async function deleteProduto(id) {
+            if (!confirm('Excluir este produto?')) return;
+            await fetch(`/api/produtos/${id}`, { method: 'DELETE' });
+            loadProdutos();
+        }
+
+        document.getElementById('modal').addEventListener('click', (e) => {
+            if (e.target.id === 'modal') closeModal();
+        });
+
+        loadProdutos();
+    </script>
+</body>
+</html>
