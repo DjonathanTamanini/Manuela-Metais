@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 style="color: #2D5A27;">📜 Histórico: {{ cliente.nome }}</h2>
+        <a href="/clientes" class="btn btn-outline-secondary">Voltar para Clientes</a>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm p-3">
+                <span class="text-muted small">Status Financeiro</span>
+                <h3 class="{{ 'text-danger' if cliente.saldo < 0 else 'text-success' }} fw-bold">
+                    R$ {{ cliente.saldo }}
+                </h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Data/Hora</th>
+                        <th>Material</th>
+                        <th>Peso (kg)</th>
+                        <th>Valor Total (R$)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in compras %}
+                    <tr>
+                        <td class="ps-4">{{ c.data_pedido.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td><span class="badge bg-secondary">{{ c.nome_produto }}</span></td>
+                        <td>{{ c.peso }} kg</td>
+                        <td class="fw-bold">R$ {{ c.valor_total }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center py-4 text-muted">Este cliente ainda não possui movimentações.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

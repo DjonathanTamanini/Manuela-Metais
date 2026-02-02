@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card p-4 shadow-sm border-0" style="border-left: 5px solid #2D5A27 !important;">
+            <h5>📦 Estoque Total: <span class="text-success">{{ estoque }} kg</span></h5>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card p-4 shadow-sm border-0" style="border-left: 5px solid #E74C3C !important;">
+            <h5>📉 Contas a Receber: <span class="text-danger">R$ {{ "%.2f"|format(a_receber) }}</span></h5>
+        </div>
+    </div>
+
+    <div class="col-md-12">
+        <div class="card p-4 shadow-sm">
+            <h4>🚀 Atalhos Rápidos</h4>
+            <hr>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <a href="{{ url_for('lista_clientes') }}" class="btn btn-outline-success w-100 p-3 d-flex flex-column align-items-center">
+                        <i class="fas fa-user-plus mb-2 fs-4"></i>
+                        <span>Gerenciar Clientes</span>
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{{ url_for('estoque') }}" class="btn btn-outline-primary w-100 p-3 d-flex flex-column align-items-center">
+                        <i class="fas fa-box-open mb-2 fs-4"></i>
+                        <span>Gerenciar Estoque</span>
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{{ url_for('financeiro') }}" class="btn btn-outline-danger w-100 p-3 d-flex flex-column align-items-center">
+                        <i class="fas fa-hand-holding-usd mb-2 fs-4"></i>
+                        <span>Financeiro</span>
+                    </a>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="alert alert-warning p-2 h-100 mb-0 d-flex flex-column justify-content-center text-center">
+                        <h6 class="mb-1">⚠️ Estoque Crítico</h6>
+                        <small>
+                            {% set total_alertas = alertas|length %}
+                            {{ total_alertas }} produto(s) abaixo de 50kg.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-12">
+        <div class="card p-4 shadow-sm">
+            <h4>📊 Distribuição de Estoque</h4>
+            <canvas id="estoqueChart" style="max-height: 300px;"></canvas>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const ctx = document.getElementById('estoqueChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: {{ nomes_produtos|tojson }},
+            datasets: [{
+                label: 'Kg em Estoque',
+                data: {{ valores_produtos|tojson }},
+                backgroundColor: '#2D5A27'
+            }]
+        },
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+</script>
+{% endblock %}

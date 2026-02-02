@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card p-4 shadow-sm">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4>👥 Gerenciamento de Clientes</h4>
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalCliente">Novo Cliente</button>
+    </div>
+
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Documento</th>
+                <th>Saldo Atual</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in clientes %}
+            <tr>
+                <td>{{ c.nome }}</td>
+                <td>{{ c.documento or '-' }}</td>
+                <td class="{{ 'text-danger fw-bold' if c.saldo < 0 else 'text-success' }}">
+                    R$ {{ "%.2f"|format(c.saldo) }}
+                </td>
+                <td>
+                    <a href="{{ url_for('historico_cliente', id=c.id) }}" class="btn btn-sm btn-info text-white">Histórico</a>
+                    <a href="{{ url_for('editar_cliente', id=c.id) }}" class="btn btn-sm btn-outline-secondary">Editar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="modal fade" id="modalCliente" tabindex="-1">
+    <div class="modal-dialog">
+        <form action="{{ url_for('cadastrar', tipo='cliente') }}" method="POST" class="modal-content">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="modal-header"><h5>Cadastrar Cliente</h5></div>
+            <div class="modal-body">
+                <input type="text" name="nome" class="form-control mb-2" placeholder="Nome Completo" required>
+                <input type="text" name="documento" class="form-control mb-2" placeholder="CPF/CNPJ">
+                <input type="text" name="telefone" class="form-control mb-2" placeholder="Telefone">
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Salvar</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

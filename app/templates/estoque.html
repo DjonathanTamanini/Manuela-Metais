@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card p-4 shadow-sm mb-4">
+    <h4>🛒 Registrar Compra de Material</h4>
+    <form action="{{ url_for('pedido_compra') }}" method="POST" class="row g-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <div class="col-md-3">
+            <label class="form-label">Material</label>
+            <select name="id_produto" id="select_produto" class="form-select" required onchange="calcularTotal()">
+                <option value="" disabled selected>Selecione o material</option>
+                {% for p in produtos %}
+                <option value="{{ p.id }}" data-preco="{{ p.preco_quilo }}">{{ p.nome }} (R$ {{ p.preco_quilo }}/kg)</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">Fornecedor/Cliente</label>
+            <select name="id_cliente" class="form-select" required>
+                {% for c in clientes %}
+                <option value="{{ c.id }}">{{ c.nome }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label">Peso (kg)</label>
+            <input type="number" step="0.01" name="peso" id="input_peso" class="form-control" required oninput="calcularTotal()">
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label">Valor Total (R$)</label>
+            <input type="number" step="0.01" name="valor_total" id="input_total" class="form-control" required>
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label">Pago Agora?</label>
+            <select name="pago" class="form-select">
+                <option value="sim">Sim</option>
+                <option value="nao" selected>Não (Gerar Saldo)</option>
+            </select>
+        </div>
+
+        <div class="col-12 text-end">
+            <button type="submit" class="btn btn-success">Registrar Entrada</button>
+        </div>
+    </form>
+</div>
+
+<div class="card p-4 shadow-sm">
+    <h4>📦 Materiais Cadastrados</h4>
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Material</th>
+                <th>Preço/Kg</th>
+                <th>Estoque Atual</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in produtos %}
+            <tr>
+                <td>{{ p.id }}</td>
+                <td>{{ p.nome }}</td>
+                <td>R$ {{ p.preco_quilo }}</td>
+                <td class="{{ 'text-danger fw-bold' if p.estoque_atual < 50 else '' }}">
+                    {{ p.estoque_atual }} kg
+                </td>
+                <td>
+                    <a href="{{ url_for('editar_produto', id=p.id) }}" class="btn btn-sm btn-outline-secondary">Editar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+function calcularTotal() {
+    const select = document.getElementById('select_produto');
+    const inputPeso = document.getElementById('input_peso');
+    const inputTotal = document.getElementById('input_total');
+
+    // Pega o preço que guardamos no data-preco da opção selecionada
+    const opcaoSelecionada = select.options[select.selectedIndex];
+    const precoQuilo = opcaoSelecionada.getAttribute('data-preco');
+    const peso = inputPeso.value;
+
+    if (precoQuilo && peso) {
+        const total = parseFloat(precoQuilo) * parseFloat(peso);
+        inputTotal.value = total.toFixed(2); // Formata com 2 casas decimais
+    } else {
+        inputTotal.value = '';
+    }
+}
+</script>
+
+{% endblock %}
